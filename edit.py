@@ -58,4 +58,4 @@ pct_cut = (1-final_cut.duration/total_time)*100
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% removed)\n---".format(final_cut.duration, pct_cut))
 
 #write final video to output file
-final_cut.write_videofile(os.getcwd() + "/%OUTPUTS/" + output_file)
+final_cut.write_videofile(os.getcwd() + "/" + output_file)
