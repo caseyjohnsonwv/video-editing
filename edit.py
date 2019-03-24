@@ -18,10 +18,12 @@ sound = False if (sys.argv[6] == "nosound") else True
 #editing setup
 total_time = 0.0
 short_clips = []
-clip_lengths = [120/tempo, 240/tempo, 360/tempo]
+clip_lengths = [120/tempo, 240/tempo, 360/tempo, 480/tempo]
+
 
 #edit loop
 print("---\nFound %i clips --> Initializing editor.\n---" % (len(os.listdir(input_dir))))
+clip_num = 0
 for filename in os.listdir(input_dir):
 
 	#open new clip
@@ -44,13 +46,18 @@ for filename in os.listdir(input_dir):
 	clip = clip.subclip(clip_start, clip_start+clip_time)
 	
 	#save clip
-	if (len(short_clips) > 0 and rand):
-		short_clips.insert(random.randint(0, len(short_clips)-1), clip)
+	if (rand and len(short_clips) > 0):
+		index = random.randint(0, len(short_clips))
+		if (index == len(short_clips)):
+			short_clips.append(clip)
+		else:
+			short_clips.insert(index, clip)
 	else:
 		short_clips.append(clip)
 	
 	#print some clip info
-	print("%s (%.1f sec --> %.1f sec)" % (filename, orig_time, clip_time))
+	clip_num += 1
+	print("%i: %s (%.1f sec --> %.1f sec)" % (clip_num, filename, orig_time, clip_time))
 	
 #concatenate all clips
 final_cut = concatenate_videoclips(short_clips)
