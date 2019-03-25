@@ -83,17 +83,16 @@ pct_cut = (1-final_cut.duration/total_time)*100
 
 #overwrite final_cut audio with song choice
 if (song is not None):
-	if (song.duration < final_cut.duration):
-		print("\n---Supplied audio not long enough --> could not be included in final video.")
-
-	else:	
-		#if audio is too short, start 4 beats sooner until it fits
-		while (audio_start + final_cut.duration > song.end):
-			audio_start -= 240/tempo
-			
-		#cut audio and write to final_cut
-		song = song.subclip(audio_start, audio_start+final_cut.duration)
-		final_cut = final_cut.set_audio(song)
+	
+	#find measure before "audio start" time parameter
+	measure = 0
+	while (measure*240/tempo <= audio_start):
+		measure += 1
+	music_start = (measure-1)*240/tempo
+	
+	#cut song and apply to final_cut
+	song = song.subclip(music_start, music_start+final_cut.duration)
+	final_cut = final_cut.set_audio(song)
 
 #write final video to output file
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% removed from original footage).\n---".format(final_cut.duration, pct_cut))
