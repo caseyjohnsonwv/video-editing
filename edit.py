@@ -23,6 +23,15 @@ beat = 60/tempo
 clip_lengths = [2*beat, 4*beat, 6*beat, 8*beat]
 song = None
 
+#markov chain setup (using integers for speed, every row sums to 10)
+last_cl_index = -1
+markov = [
+[1, 3, 3, 3],
+[2, 3, 3, 2],
+[2, 3, 3, 2],
+[3, 3, 3, 1]
+]
+
 #edit loop
 print("---\nFound %i files --> Initializing editor.\n---" % (len(os.listdir(input_dir))))
 clip_num = 0
@@ -44,11 +53,26 @@ for filename in os.listdir(input_dir):
 			continue
 		
 		#choose a random clip length
-		clip_time = clip_lengths[random.randint(0,len(clip_lengths))-1]
-		while (clip_time > orig_time):
-			clip_time = clip_lengths[random.randint(0,len(clip_lengths))-1]
+		new_cl_index = -1
+		if (last_cl_index == -1):
+			#first clip length is totally random
+			new_cl_index = random.randint(0,len(clip_lengths))-1
+			while (clip_lengths[new_cl_index] > orig_time):
+				new_cl_index = random.randint(0,len(clip_lengths))-1
+		else:
+			#subsequent clip lengths are chosen by markov chains
+			chain = markov[last_cl_index]
+			while(new_cl_index == -1 or clip_lengths[new_cl_index] > orig_time):
+				rand_num = random.randint(10)
+				psum = 0
+				for i in range(len(chain)):
+					psum += chain[i]
+					if (psum >= rand_num):
+						new_cl_index = i
+						break
 			
 		#choose a random starting point, then cut the clip
+		clip_time = clip_lengths[new_cl_index]
 		clip_start = random.random()*(orig_time-clip_time)
 		clip = clip.subclip(clip_start, clip_start+clip_time)
 		
