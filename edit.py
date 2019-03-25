@@ -81,14 +81,19 @@ for filename in os.listdir(input_dir):
 final_cut = concatenate_videoclips(short_clips)
 pct_cut = (1-final_cut.duration/total_time)*100
 
-#overwrite final_cut audio with song choice
-if (song is not None):
+#overwrite final_cut audio with song choice if the song is long enough
+if (song is not None and song.duration >= final_cut.duration):
 	
 	#find measure before "audio start" time parameter
 	measure = 0
 	while (measure*240/tempo <= audio_start):
 		measure += 1
 	music_start = (measure-1)*240/tempo
+	
+	#extend audio backwards from "start" time until long enough
+	while (music_start+final_cut.duration > song.end):
+		measure -= 1
+		music_start = (measure-1)*240/tempo
 	
 	#cut song and apply to final_cut
 	song = song.subclip(music_start, music_start+final_cut.duration)
