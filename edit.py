@@ -3,18 +3,6 @@ import os
 import random
 import sys
 
-"""
-COMMAND LINE ARGS
-
-0: edit.py
-1: source directory, relative to current working directory
-2: destination file name (including filetype extension); file is placed in current working directory
-3: inorder concatenates clips in lexicographical order by name; random is random
-4: tempo of the video or music it will be set to (bpm)
-5: output resolution; hd is 1080x1920, 4k is 2160x3840; affects export rate
-6: nosound disables output video's sound; anything else enables it
-"""
-
 #parse args
 if (len(sys.argv) != 7):
 	print("\nERROR: Expected 'edit.py <src_dir> <dest_filename> <inorder/random> <tempo> <audio_t0/None> <hd/4k>'")
@@ -101,4 +89,4 @@ if (song is not None and song.duration >= final_cut.duration):
 
 #write final video to output file
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% removed from original footage).\n---".format(final_cut.duration, pct_cut))
-final_cut.write_videofile(os.getcwd() + "/" + output_file)
+#final_cut.write_videofile(os.getcwd() + "/" + output_file)
