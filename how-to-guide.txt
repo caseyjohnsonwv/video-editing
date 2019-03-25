@@ -17,14 +17,5 @@ COMMAND LINE ARGUMENTS:
 3: inorder concatenates clips in alphabetical order by name; random concatenates at random
 4: tempo (in bpm) of the song this video will be set to
 5: start time of the song file (in seconds) --> audio will start on the measure before this second
-6: hd outputs 1080x1920, 4K outputs 2160x3840
-
-
----
-SAMPLE USAGE:
-
->> edit.py march24 march24.mp4 random 92 147 hd
-(input directory is 'march24', output file is 'march24.mp4', random clip order, 92bpm, start music at 147sec, output 1080x1920)
-
->> edit.py march25 rainy-day.mp4 inorder 91 116 4K
-(input directory is 'march25', output file is 'rainy-day.mp4', edit clips in order, 91bpm, start music at 116sec, output 2160x3840)
+6: end_caps adds 4 beats of black screen to the start/end
+7: hd outputs 1080x1920, 4K outputs 2160x3840
