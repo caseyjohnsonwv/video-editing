@@ -4,8 +4,8 @@ import random
 import sys
 
 #parse args
-if (len(sys.argv) != 7):
-	print("\nERROR: Expected 'edit.py <src_dir> <dest_filename> <inorder/random> <tempo> <audio_t0/None> <hd/4k>'")
+if (len(sys.argv) != 8):
+	print("\nERROR: Expected 'edit.py <src_dir> <dest_filename> <inorder/random> <tempo> <audio_t0/None> <end_caps/None> <hd/4k>'")
 	exit()
 	
 input_dir = os.getcwd() + "/" + sys.argv[1]
@@ -13,7 +13,8 @@ output_file = sys.argv[2]
 rand = True if sys.argv[3] == "random" else False
 tempo = int(sys.argv[4])
 audio_start = 0.0 if (sys.argv[5].lower() == "none") else float(sys.argv[5])
-res = (2160, 3840) if (sys.argv[6] == "4k" or sys.argv[6] == "4K") else (1080, 1920)
+end_caps = False if (sys.argv[6].lower() == "none") else True
+res = (2160, 3840) if (sys.argv[7] == "4k" or sys.argv[7] == "4K") else (1080, 1920)
 
 #editing setup
 total_time = 0
@@ -67,10 +68,11 @@ for filename in os.listdir(input_dir):
 		
 
 #add black screen to start/end of video
-(h,w) = res
-black_screen = ColorClip(size=(w,h), color=(0,0,0), duration=4*beat)
-short_clips.insert(0, black_screen)
-short_clips.append(black_screen)
+if (end_caps):
+	(h,w) = res
+	black_screen = ColorClip(size=(w,h), color=(0,0,0), duration=4*beat)
+	short_clips.insert(0, black_screen)
+	short_clips.append(black_screen)
 
 #concatenate all clips
 final_cut = concatenate_videoclips(short_clips)
