@@ -23,13 +23,13 @@ beat = 60/tempo
 clip_lengths = [2*beat, 4*beat, 6*beat, 8*beat]
 song = None
 
-#markov chain setup (using integers for speed, every row sums to 10)
+#markov chain setup (rows can have different sums, this is handled by the number generator)
 last_cl_index = -1
 markov = [
-[1, 3, 3, 3],
-[2, 3, 3, 2],
-[2, 3, 3, 2],
-[3, 3, 3, 1]
+[3, 3, 3, 1],
+[1, 4, 3, 2],
+[3, 4, 2, 1],
+[3, 4, 2, 1]
 ]
 
 #edit loop
@@ -63,7 +63,7 @@ for filename in os.listdir(input_dir):
 			#subsequent clip lengths are chosen by markov chains
 			chain = markov[last_cl_index]
 			while(new_cl_index == -1 or clip_lengths[new_cl_index] > orig_time):
-				rand_num = random.randint(10)
+				rand_num = random.randint(sum(chain))
 				psum = 0
 				for i in range(len(chain)):
 					psum += chain[i]
