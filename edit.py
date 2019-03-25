@@ -12,13 +12,14 @@ input_dir = os.getcwd() + "/" + sys.argv[1]
 output_file = sys.argv[2]
 rand = True if sys.argv[3] == "random" else False
 tempo = int(sys.argv[4])
-audio_start = None if (sys.argv[5].lower() == "none") else float(sys.argv[5])
+audio_start = 0.0 if (sys.argv[5].lower() == "none") else float(sys.argv[5])
 res = (2160, 3840) if (sys.argv[6] == "4k" or sys.argv[6] == "4K") else (1080, 1920)
 
 #editing setup
 total_time = 0
 short_clips = []
-clip_lengths = [120/tempo, 240/tempo, 360/tempo, 480/tempo]
+beat = 60/tempo
+clip_lengths = [2*beat, 4*beat, 6*beat, 8*beat]
 song = None
 
 #edit loop
@@ -65,18 +66,24 @@ for filename in os.listdir(input_dir):
 		print("%i: %s (%.1f sec --> %.1f sec)" % (clip_num, filename, orig_time, clip_time))
 		
 
+#add black screen to start/end of video
+(h,w) = res
+black_screen = ColorClip(size=(w,h), color=(0,0,0), duration=4*beat)
+short_clips.insert(0, black_screen)
+short_clips.append(black_screen)
+
 #concatenate all clips
 final_cut = concatenate_videoclips(short_clips)
-pct_cut = (1-final_cut.duration/total_time)*100
+pct_used = 100*final_cut.duration/total_time
 
 #overwrite final_cut audio with song choice if the song is long enough
 if (song is not None and song.duration >= final_cut.duration):
 	
-	#find measure before "audio start" time parameter
+	#find 2 measures before "audio start" time parameter
 	measure = 0
-	while (measure*240/tempo <= audio_start):
-		measure += 1
-	music_start = (measure-1)*240/tempo
+	while (measure*4*60/tempo <= audio_start):
+		measure += 2
+	music_start = (measure-2)*240/tempo
 	
 	#extend audio backwards from "start" time until long enough
 	while (music_start+final_cut.duration > song.end):
@@ -88,5 +95,5 @@ if (song is not None and song.duration >= final_cut.duration):
 	final_cut = final_cut.set_audio(song)
 
 #write final video to output file
-print("---\nFinal video length: {0:.1f} sec ({1:.2f}% removed from original footage).\n---".format(final_cut.duration, pct_cut))
-#final_cut.write_videofile(os.getcwd() + "/" + output_file)
+print("---\nFinal video length: {0:.1f} sec ({1:.2f}% of original {2:.1f} sec).\n---".format(final_cut.duration, pct_used, total_time))
+final_cut.write_videofile(os.getcwd() + "/%" + output_file)
