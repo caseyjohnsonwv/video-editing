@@ -120,10 +120,17 @@ if (song is not None and song.duration >= final_cut.duration):
 	while (music_start <= audio_start and music_start + final_cut.duration <= song.end):
 		measure += 1
 		music_start = measure*fourbeats
-	
-	#cut song and apply to final_cut
+		
+	#cut song and apply fade-in/fade-out
 	song = song.subclip(music_start, music_start+final_cut.duration)
+	if (end_caps):
+		song = afx.audio_fadein(song, fourbeats)
+		song = afx.audio_fadeout(song, eightbeats)
+		
+	
+	#apply song to final_cut
 	final_cut = final_cut.set_audio(song)
+	
 
 #write final video to output file
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% of original {2:.1f} sec).\n---".format(final_cut.duration, pct_used, total_time))
