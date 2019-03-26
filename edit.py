@@ -5,41 +5,47 @@ import sys
 
 #parse args
 if (len(sys.argv) != 8):
-	print("\nERROR: Expected 'edit.py <src_dir> <dest_filename> <inorder/random> <tempo> <audio_t0/None> <end_caps/None> <hd/4k>'")
+	print("\nERROR: Expected 'edit.py <src_dir> <dest_filename> <inorder/random> <tempo/None> <audio_t0/None> <end_caps/None> <hd/4k>'")
 	exit()
 	
-input_dir = os.getcwd() + "/" + sys.argv[1]
+input_dir_short = sys.argv[1]
 output_file = sys.argv[2]
 rand = True if sys.argv[3] == "random" else False
-tempo = int(sys.argv[4])
+tempo = 120 if (sys.argv[4].lower() == "none") else int(sys.argv[4])
 audio_start = 0.0 if (sys.argv[5].lower() == "none") else float(sys.argv[5])
 end_caps = False if (sys.argv[6].lower() == "none") else True
-res = (2160, 3840) if (sys.argv[7] == "4k" or sys.argv[7] == "4K") else (1080, 1920)
+res = (2160, 3840) if (sys.argv[7].lower() == "4k") else (1080, 1920)
 
 #editing setup
 total_time = 0
 short_clips = []
 beat = 60/tempo
-clip_lengths = [2*beat, 4*beat, 6*beat, 8*beat]
+twobeats = 2*beat
+fourbeats = 4*beat
+sixbeats = 6*beat
+eightbeats = 8*beat
+clip_lengths = [twobeats, fourbeats, sixbeats, eightbeats]
 song = None
 
 #markov chain setup (rows can have different sums, this is handled by the number generator)
 last_cl_index = -1
 markov = [
-[3, 3, 3, 1],
-[1, 4, 3, 2],
-[3, 4, 2, 1],
-[3, 4, 2, 1]
+[2, 3, 2, 0],
+[2, 4, 1, 1],
+[2, 4, 1, 1],
+[2, 5, 3, 0]
 ]
 
 #edit loop
-print("---\nFound %i files --> Initializing editor.\n---" % (len(os.listdir(input_dir))))
+input_dir = os.getcwd() + "/" + sys.argv[1]
+print("---\nFound %i files in '%s' --> Initializing editor.\n---" % (len(os.listdir(input_dir)), input_dir_short))
 clip_num = 0
 for filename in os.listdir(input_dir):
 	input_path_full = input_dir + "/" + filename
 	ext = filename[-3:].lower()
 	
 	if (ext == "mp3" or ext == "wav"):
+		#save audio file for later
 		song = AudioFileClip(input_path_full)
 	
 	else:
@@ -50,6 +56,8 @@ for filename in os.listdir(input_dir):
 			
 		#throw away clips that are too short to use
 		if (orig_time < clip_lengths[0]):
+			clip_num += 1
+			print("%i: %s (%.1f sec --> 0.0 sec) ... (Clip could not be used)" % (clip_num, filename, orig_time))
 			continue
 		
 		#choose a random clip length
@@ -65,11 +73,11 @@ for filename in os.listdir(input_dir):
 			while(new_cl_index == -1 or clip_lengths[new_cl_index] > orig_time):
 				rand_num = random.randint(sum(chain))
 				psum = 0
-				for i in range(len(chain)):
+				i = 0
+				while (psum < rand_num):
 					psum += chain[i]
-					if (psum >= rand_num):
-						new_cl_index = i
-						break
+					i += 1
+				new_cl_index = i
 			
 		#choose a random starting point, then cut the clip
 		clip_time = clip_lengths[new_cl_index]
@@ -94,27 +102,24 @@ for filename in os.listdir(input_dir):
 #add black screen to start/end of video
 if (end_caps):
 	(h,w) = res
-	black_screen = ColorClip(size=(w,h), color=(0,0,0), duration=4*beat)
-	short_clips.insert(0, black_screen)
-	short_clips.append(black_screen)
+	first_blackscreen = ColorClip(size=(w,h), color=(0,0,0), duration=fourbeats)
+	last_blackscreen = ColorClip(size=(w,h), color=(0,0,0), duration=eightbeats)
+	short_clips.insert(0, first_blackscreen)
+	short_clips.append(last_blackscreen)
 
 #concatenate all clips
 final_cut = concatenate_videoclips(short_clips)
-pct_used = 100*final_cut.duration/total_time
+pct_used = final_cut.duration/total_time*100
 
 #overwrite final_cut audio with song choice if the song is long enough
 if (song is not None and song.duration >= final_cut.duration):
 	
-	#find 2 measures before "audio start" time parameter
+	#find the measure before the user's audio_t0; will stop at latest allowable start time
 	measure = 0
-	while (measure*4*60/tempo <= audio_start):
-		measure += 2
-	music_start = (measure-2)*240/tempo
-	
-	#extend audio backwards from "start" time until long enough
-	while (music_start+final_cut.duration > song.end):
-		measure -= 1
-		music_start = (measure-1)*240/tempo
+	music_start = 0
+	while (music_start <= audio_start and music_start + final_cut.duration <= song.end):
+		measure += 1
+		music_start = measure*fourbeats
 	
 	#cut song and apply to final_cut
 	song = song.subclip(music_start, music_start+final_cut.duration)
