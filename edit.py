@@ -4,8 +4,8 @@ import random
 import sys
 
 #parse args
-if (len(sys.argv) != 8):
-	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?> <4k?>'")
+if (len(sys.argv) != 7):
+	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?>'")
 	exit()
 	
 input_dir_short = sys.argv[1]
@@ -14,17 +14,16 @@ tempo = 120 if sys.argv[3].lower() == "none" else int(sys.argv[3])
 audio_start = 0.0 if (sys.argv[4].lower() == "none") else float(sys.argv[4])
 speedup = None if (sys.argv[5].lower() == "none" or sys.argv[5].lower() == "false" or sys.argv[5].lower() == "no") else float(sys.argv[5])
 end_caps = False if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no") else True
-res = (2160, 3840) if (sys.argv[7].lower() == "4k" or sys.argv[7].lower() == "yes") else (1080, 1920)
 
 #editing setup
 total_time = 0
-short_clips = []
 beat = 60/tempo
 twobeats = 2*beat
 fourbeats = 4*beat
 sixbeats = 6*beat
 eightbeats = 8*beat
 clip_lengths = [twobeats, fourbeats, sixbeats, eightbeats]
+short_clips = []
 song = None
 final_cut = None
 clip = None
@@ -48,14 +47,15 @@ for filename in os.listdir(input_dir):
 			del clip
 		
 		#open new clip
-		clip = VideoFileClip(input_path_full, target_resolution=res, audio=False, fps_source='fps')
+		clip = VideoFileClip(input_path_full, target_resolution=(1080,1920), audio=False, fps_source='fps')
 		
 		orig_time = clip.duration
 		total_time += orig_time
 		
 		#apply speedup to clip
 		if (speedup is not None):
-			clip = clip.fx(vfx.speedx, factor=speedup)
+			if (speedup > 1):
+				clip = clip.fx(vfx.speedx, factor=speedup)
 			
 		#throw away clips that are too short to use
 		if (clip.duration < clip_lengths[0]):
@@ -74,10 +74,7 @@ for filename in os.listdir(input_dir):
 		clip = clip.subclip(clip_start, clip_start+clip_time)
 		
 		#save clip
-		if (final_cut is None):
-			final_cut = clip
-		else:
-			final_cut = concatenate_videoclips([final_cut, clip])
+		short_clips.append(clip)
 		
 		#print some clip info
 		print("%i: %s (%.1f sec --> %.1f sec)" % (clip_num, filename, orig_time, clip_time))
@@ -85,11 +82,13 @@ for filename in os.listdir(input_dir):
 
 #add black screen to start/end of video
 if (end_caps):
-	(h,w) = res
-	first_blackscreen = ColorClip(size=(w,h), color=(0,0,0), duration=fourbeats)
-	last_blackscreen = ColorClip(size=(w,h), color=(0,0,0), duration=eightbeats)
-	final_cut = concatenate_videoclips([first_blackscreen, final_cut, last_blackscreen])
+	blackscreen = ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats)
+	short_clips.insert(0, blackscreen)
+	short_clips.append(blackscreen)
 
+#make final cut from all clips
+final_cut = concatenate_videoclips(short_clips)
+pct_used = final_cut.duration/total_time*100
 
 #overwrite final_cut audio with song choice if the song is long enough
 if (song is not None and song.duration >= final_cut.duration):
@@ -98,21 +97,23 @@ if (song is not None and song.duration >= final_cut.duration):
 	measure = 0
 	music_start = 0
 	while (music_start <= audio_start and music_start + final_cut.duration <= song.end):
-		measure += 1
+		measure += 2
 		music_start = measure*fourbeats
 		
 	#cut song and apply fade-in/fade-out
 	song = song.subclip(music_start, music_start+final_cut.duration)
 	if (end_caps):
-		song = afx.audio_fadein(song, fourbeats)
+		song = afx.audio_fadein(song, eightbeats)
 		song = afx.audio_fadeout(song, eightbeats)
 	
 	#apply song to final_cut
 	final_cut = final_cut.set_audio(song)
-	
+
+#deallocate unneeded variables to speed up exporting
+del short_clips
+
 
 #write final video to output file
-pct_used = final_cut.duration/total_time*100
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% of original {2:.1f} sec).\n---".format(final_cut.duration, pct_used, total_time))
 output_path_full = os.getcwd() + "/%" + output_file
-final_cut.write_videofile(output_path_full)
+final_cut.write_videofile(output_path_full, threads=4)
