@@ -4,18 +4,17 @@ import random
 import sys
 
 #parse args
-if (len(sys.argv) != 9):
-	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <random?> <tempo?> <audio_t0?> <speedup?> <end_caps?> <4k?>'")
+if (len(sys.argv) != 8):
+	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?> <4k?>'")
 	exit()
 	
 input_dir_short = sys.argv[1]
 output_file = sys.argv[2]
-rand = True if sys.argv[3].lower() == "random" or sys.argv[3].lower() == "true" or sys.argv[3].lower() == "yes" else False
-tempo = 120 if sys.argv[4].lower() == "none" else int(sys.argv[4])
-audio_start = 0.0 if (sys.argv[5].lower() == "none") else float(sys.argv[5])
-speedup = None if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no") else float(sys.argv[6])
-end_caps = False if (sys.argv[7].lower() == "none" or sys.argv[7].lower() == "false" or sys.argv[7].lower() == "no") else True
-res = (2160, 3840) if (sys.argv[8].lower() == "4k" or sys.argv[8].lower() == "yes") else (1080, 1920)
+tempo = 120 if sys.argv[3].lower() == "none" else int(sys.argv[3])
+audio_start = 0.0 if (sys.argv[4].lower() == "none") else float(sys.argv[4])
+speedup = None if (sys.argv[5].lower() == "none" or sys.argv[5].lower() == "false" or sys.argv[5].lower() == "no") else float(sys.argv[5])
+end_caps = False if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no") else True
+res = (2160, 3840) if (sys.argv[7].lower() == "4k" or sys.argv[7].lower() == "yes") else (1080, 1920)
 
 #editing setup
 total_time = 0
@@ -27,15 +26,8 @@ sixbeats = 6*beat
 eightbeats = 8*beat
 clip_lengths = [twobeats, fourbeats, sixbeats, eightbeats]
 song = None
-
-#markov chain setup (rows can have different sums, this is handled by the number generator)
-last_cl_index = -1
-markov = [
-[2, 3, 2, 0],
-[2, 4, 1, 1],
-[2, 4, 1, 1],
-[2, 5, 3, 0]
-]
+final_cut = None
+clip = None
 
 #edit loop
 input_dir = os.getcwd() + "/" + sys.argv[1]
@@ -51,16 +43,11 @@ for filename in os.listdir(input_dir):
 	
 	else:
 		clip_num += 1
-		clip = None
+		
+		if (clip is not None):
+			del clip
 		
 		#open new clip
-		"""
-		try:
-			clip = VideoFileClip(input_path_full, target_resolution=res, audio=False, fps_source='fps')
-		except:
-			print("%i: %s (ERROR IMPORTING CLIP)" % (clip_num, filename))
-			continue
-		"""
 		clip = VideoFileClip(input_path_full, target_resolution=res, audio=False, fps_source='fps')
 		
 		orig_time = clip.duration
@@ -77,47 +64,20 @@ for filename in os.listdir(input_dir):
 			continue
 		
 		#choose a random clip length
-		new_cl_index = -1		
-		if (last_cl_index == -1):
-			#first clip length is totally random
+		new_cl_index = random.randint(0,len(clip_lengths))-1
+		while (clip_lengths[new_cl_index] > clip.duration):
 			new_cl_index = random.randint(0,len(clip_lengths))-1
-			while (clip_lengths[new_cl_index] > clip.duration):
-				new_cl_index = random.randint(0,len(clip_lengths))-1
-				
-		else:
-			#subsequent clip lengths are chosen by markov chains
-			chain = markov[last_cl_index]
-			while(new_cl_index == -1 or clip_lengths[new_cl_index] > clip.duration):
-				
-				#on repeated calcuations, ignore clip lengths that are too long
-				if (new_cl_index != -1):
-					chain = chain[0:new_cl_index-1]
-					if (len(chain) == 1):
-						new_cl_index = 0
-						break
-				
-				rand_num = random.randint(sum(chain))
-				psum = 0
-				i = 0
-				while (psum < rand_num):
-					psum += chain[i]
-					i += 1
-				new_cl_index = i
-			
+		
 		#choose a random starting point, then cut the clip
 		clip_time = clip_lengths[new_cl_index]
 		clip_start = random.random()*(clip.duration-clip_time)
 		clip = clip.subclip(clip_start, clip_start+clip_time)
 		
 		#save clip
-		if (rand and len(short_clips) > 0):
-			index = random.randint(0, len(short_clips))
-			if (index == len(short_clips)):
-				short_clips.append(clip)
-			else:
-				short_clips.insert(index, clip)
+		if (final_cut is None):
+			final_cut = clip
 		else:
-			short_clips.append(clip)
+			final_cut = concatenate_videoclips([final_cut, clip])
 		
 		#print some clip info
 		print("%i: %s (%.1f sec --> %.1f sec)" % (clip_num, filename, orig_time, clip_time))
@@ -128,13 +88,8 @@ if (end_caps):
 	(h,w) = res
 	first_blackscreen = ColorClip(size=(w,h), color=(0,0,0), duration=fourbeats)
 	last_blackscreen = ColorClip(size=(w,h), color=(0,0,0), duration=eightbeats)
-	short_clips.insert(0, first_blackscreen)
-	short_clips.append(last_blackscreen)
+	final_cut = concatenate_videoclips([first_blackscreen, final_cut, last_blackscreen])
 
-
-#concatenate all clips
-final_cut = concatenate_videoclips(short_clips)
-pct_used = final_cut.duration/total_time*100
 
 #overwrite final_cut audio with song choice if the song is long enough
 if (song is not None and song.duration >= final_cut.duration):
@@ -157,5 +112,7 @@ if (song is not None and song.duration >= final_cut.duration):
 	
 
 #write final video to output file
+pct_used = final_cut.duration/total_time*100
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% of original {2:.1f} sec).\n---".format(final_cut.duration, pct_used, total_time))
-final_cut.write_videofile(os.getcwd() + "/%" + output_file)
+output_path_full = os.getcwd() + "/%" + output_file
+final_cut.write_videofile(output_path_full)

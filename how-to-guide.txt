@@ -14,9 +14,8 @@ COMMAND LINE ARGUMENTS:
 0: edit.py
 1: directory containing raw video clips
 2: destination file name, including extension --> file will be placed in edit.py's root directory
-3: inorder concatenates clips in alphabetical order by name; random concatenates at random
-4: tempo (in bpm) of the song this video will be set to
-5: start time of the song file (in seconds) --> audio will start on the measure before this second
-6: a number greater than 1 speeds up every clip by that factor; "none" or a number less than 1 does nothing
-7: end_caps adds 4 beats of black screen to the start/end
-8: hd outputs 1080x1920, 4K outputs 2160x3840
+3: tempo (in bpm) of the song this video will be set to
+4: start time of the song file (in seconds) --> audio will start on the measure before this second
+5: a number greater than 1 speeds up every clip by that factor; "none" or a number less than 1 does nothing
+6: end_caps adds 4 beats of black screen to the start/end
+7: hd outputs 1080x1920, 4K outputs 2160x3840
