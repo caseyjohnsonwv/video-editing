@@ -4,17 +4,18 @@ import random
 import sys
 
 #parse args
-if (len(sys.argv) != 8):
-	print("\nERROR: Expected 'edit.py <src_dir> <dest_filename> <inorder/random> <tempo/None> <audio_t0/None> <end_caps/None> <hd/4k>'")
+if (len(sys.argv) != 9):
+	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <random?> <tempo?> <audio_t0?> <speedup?> <end_caps?> <4k?>'")
 	exit()
 	
 input_dir_short = sys.argv[1]
 output_file = sys.argv[2]
-rand = True if sys.argv[3] == "random" else False
-tempo = 120 if (sys.argv[4].lower() == "none") else int(sys.argv[4])
+rand = True if sys.argv[3].lower() == "random" or sys.argv[3].lower() == "true" or sys.argv[3].lower() == "yes" else False
+tempo = 120 if sys.argv[4].lower() == "none" else int(sys.argv[4])
 audio_start = 0.0 if (sys.argv[5].lower() == "none") else float(sys.argv[5])
-end_caps = False if (sys.argv[6].lower() == "none") else True
-res = (2160, 3840) if (sys.argv[7].lower() == "4k") else (1080, 1920)
+speedup = None if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no" or float(sys.argv[6]) <= 1) else float(sys.argv[6])
+end_caps = False if (sys.argv[7].lower() == "none" or sys.argv[7].lower() == "false" or sys.argv[7].lower() == "no") else True
+res = (2160, 3840) if (sys.argv[8].lower() == "4k" or sys.argv[8].lower() == "yes") else (1080, 1920)
 
 #editing setup
 total_time = 0
@@ -53,9 +54,13 @@ for filename in os.listdir(input_dir):
 		clip = VideoFileClip(input_path_full, target_resolution=res)
 		orig_time = clip.duration
 		total_time += orig_time
+		
+		#apply speedup to clip
+		if (speedup is not None):
+			clip = clip.fx(vfx.speedx, factor=speedup)
 			
 		#throw away clips that are too short to use
-		if (orig_time < clip_lengths[0]):
+		if (clip.duration < clip_lengths[0]):
 			clip_num += 1
 			print("%i: %s (%.1f sec --> 0.0 sec) ... (Clip could not be used)" % (clip_num, filename, orig_time))
 			continue
@@ -65,12 +70,18 @@ for filename in os.listdir(input_dir):
 		if (last_cl_index == -1):
 			#first clip length is totally random
 			new_cl_index = random.randint(0,len(clip_lengths))-1
-			while (clip_lengths[new_cl_index] > orig_time):
+			while (clip_lengths[new_cl_index] > clip.duration):
 				new_cl_index = random.randint(0,len(clip_lengths))-1
+				
 		else:
 			#subsequent clip lengths are chosen by markov chains
 			chain = markov[last_cl_index]
-			while(new_cl_index == -1 or clip_lengths[new_cl_index] > orig_time):
+			while(new_cl_index == -1 or clip_lengths[new_cl_index] > clip.duration):
+				
+				#on repeated calcuations, ignore clip lengths that are too long
+				if (new_cl_index != -1):
+					chain = chain[0:new_cl_index-1]
+					
 				rand_num = random.randint(sum(chain))
 				psum = 0
 				i = 0
@@ -81,7 +92,7 @@ for filename in os.listdir(input_dir):
 			
 		#choose a random starting point, then cut the clip
 		clip_time = clip_lengths[new_cl_index]
-		clip_start = random.random()*(orig_time-clip_time)
+		clip_start = random.random()*(clip.duration-clip_time)
 		clip = clip.subclip(clip_start, clip_start+clip_time)
 		
 		#save clip
@@ -107,6 +118,7 @@ if (end_caps):
 	short_clips.insert(0, first_blackscreen)
 	short_clips.append(last_blackscreen)
 
+
 #concatenate all clips
 final_cut = concatenate_videoclips(short_clips)
 pct_used = final_cut.duration/total_time*100
@@ -126,7 +138,6 @@ if (song is not None and song.duration >= final_cut.duration):
 	if (end_caps):
 		song = afx.audio_fadein(song, fourbeats)
 		song = afx.audio_fadeout(song, eightbeats)
-		
 	
 	#apply song to final_cut
 	final_cut = final_cut.set_audio(song)
