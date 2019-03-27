@@ -13,7 +13,7 @@ output_file = sys.argv[2]
 rand = True if sys.argv[3].lower() == "random" or sys.argv[3].lower() == "true" or sys.argv[3].lower() == "yes" else False
 tempo = 120 if sys.argv[4].lower() == "none" else int(sys.argv[4])
 audio_start = 0.0 if (sys.argv[5].lower() == "none") else float(sys.argv[5])
-speedup = None if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no" or float(sys.argv[6]) <= 1) else float(sys.argv[6])
+speedup = None if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no") else float(sys.argv[6])
 end_caps = False if (sys.argv[7].lower() == "none" or sys.argv[7].lower() == "false" or sys.argv[7].lower() == "no") else True
 res = (2160, 3840) if (sys.argv[8].lower() == "4k" or sys.argv[8].lower() == "yes") else (1080, 1920)
 
@@ -50,8 +50,19 @@ for filename in os.listdir(input_dir):
 		song = AudioFileClip(input_path_full)
 	
 	else:
+		clip_num += 1
+		clip = None
+		
 		#open new clip
-		clip = VideoFileClip(input_path_full, target_resolution=res)
+		"""
+		try:
+			clip = VideoFileClip(input_path_full, target_resolution=res, audio=False, fps_source='fps')
+		except:
+			print("%i: %s (ERROR IMPORTING CLIP)" % (clip_num, filename))
+			continue
+		"""
+		clip = VideoFileClip(input_path_full, target_resolution=res, audio=False, fps_source='fps')
+		
 		orig_time = clip.duration
 		total_time += orig_time
 		
@@ -61,12 +72,12 @@ for filename in os.listdir(input_dir):
 			
 		#throw away clips that are too short to use
 		if (clip.duration < clip_lengths[0]):
-			clip_num += 1
 			print("%i: %s (%.1f sec --> 0.0 sec) ... (Clip could not be used)" % (clip_num, filename, orig_time))
+			clip.close()
 			continue
 		
 		#choose a random clip length
-		new_cl_index = -1
+		new_cl_index = -1		
 		if (last_cl_index == -1):
 			#first clip length is totally random
 			new_cl_index = random.randint(0,len(clip_lengths))-1
@@ -81,7 +92,10 @@ for filename in os.listdir(input_dir):
 				#on repeated calcuations, ignore clip lengths that are too long
 				if (new_cl_index != -1):
 					chain = chain[0:new_cl_index-1]
-					
+					if (len(chain) == 1):
+						new_cl_index = 0
+						break
+				
 				rand_num = random.randint(sum(chain))
 				psum = 0
 				i = 0
@@ -106,7 +120,6 @@ for filename in os.listdir(input_dir):
 			short_clips.append(clip)
 		
 		#print some clip info
-		clip_num += 1
 		print("%i: %s (%.1f sec --> %.1f sec)" % (clip_num, filename, orig_time, clip_time))
 		
 
