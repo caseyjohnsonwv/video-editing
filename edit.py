@@ -5,24 +5,17 @@ import sys
 
 
 """
-ARGUMENT PARSING FUNCTIONS
+ARGUMENT PARSING FUNCTION
 """
 
-def parse_boolean_arg(arg):
-	arg = arg.lower()
-	affirmatives = ['true', 'yes', 'y']
-	for test in affirmatives:
-		if (arg == test):
-			return True
-	return False
-	
-def parse_numeric_arg(arg, rejections=[], default=None):
+def parse_arg(arg, rejections=[], default=None):
 	arg = arg.lower()
 	for test in rejections:
 		if (arg == test):
 			return default
 	return arg
 
+	
 	
 """
 BEGIN MAIN SCRIPT
@@ -36,10 +29,10 @@ if (len(sys.argv) != 7):
 rejs = ['no', 'none', 'f', 'false']
 input_dir_short = sys.argv[1]
 output_file = sys.argv[2]
-tempo = int(parse_numeric_arg(sys.argv[3], rejections=rejs, default=120))
-audio_start = float(parse_numeric_arg(sys.argv[4], rejections=rejs, default=0.0))
-speedup = float(parse_numeric_arg(sys.argv[5], rejections=rejs, default=1.0))
-end_caps = parse_boolean_arg(sys.argv[6])
+tempo = int(parse_arg(sys.argv[3], rejections=rejs, default=120))
+audio_start = float(parse_arg(sys.argv[4], rejections=rejs, default=0.0))
+speedup = float(parse_arg(sys.argv[5], rejections=rejs, default=1.0))
+end_caps = False if not parse_arg(sys.argv[6], rejections=rejs, default=False) else True
 
 
 #editing setup
