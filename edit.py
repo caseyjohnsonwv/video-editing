@@ -15,6 +15,7 @@ audio_start = 0.0 if (sys.argv[4].lower() == "none") else float(sys.argv[4])
 speedup = None if (sys.argv[5].lower() == "none" or sys.argv[5].lower() == "false" or sys.argv[5].lower() == "no") else float(sys.argv[5])
 end_caps = False if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no") else True
 
+
 #editing setup
 beat = 60/tempo
 twobeats = 2*beat
@@ -22,11 +23,13 @@ fourbeats = 4*beat
 sixbeats = 6*beat
 eightbeats = 8*beat
 clip_lengths = [twobeats, fourbeats, sixbeats, eightbeats]
+num_cls = len(clip_lengths)
 total_time = 0
 short_clips = []
 song = None
 final_cut = None
 clip = None
+
 
 #edit loop
 input_dir = os.getcwd() + "/" + sys.argv[1]
@@ -57,13 +60,13 @@ for filename in os.listdir(input_dir):
 			
 		#throw away clips that are too short to use
 		if (clip.duration < clip_lengths[0]):
-			print("%i: %s (%.1f sec --> 0.0 sec) ... (Clip could not be used)" % (clip_num, filename, orig_time))
+			print("%i: %s (%.1f sec --> 0.0 sec) ... (Clip too short!)" % (clip_num, filename, orig_time))
 			clip.close()
 			continue
 		
 		#choose a random clip length
 		while True:
-			idx = random.randint(0,len(clip_lengths))-1
+			idx = random.randint(0,num_cls)-1
 			if clip_lengths[idx] < clip.duration:
 				break
 		
@@ -84,9 +87,11 @@ if (end_caps):
 	short_clips.insert(0, ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats))
 	short_clips.append(ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats))
 
+	
 #make final cut from all clips
 final_cut = concatenate_videoclips(short_clips)
 pct_used = final_cut.duration/total_time*100
+
 
 #overwrite final_cut audio with song choice if the song is long enough
 if (song is not None and song.duration >= final_cut.duration):
@@ -107,10 +112,12 @@ if (song is not None and song.duration >= final_cut.duration):
 	#apply song to final_cut
 	final_cut = final_cut.set_audio(song)
 
+	
 #deallocate unneeded variables to prevent memory swapping
 del clip_lengths
 del short_clips
 del song
+
 
 #write final video to output file
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% of original {2:.1f} sec).\n---".format(final_cut.duration, pct_used, total_time))
