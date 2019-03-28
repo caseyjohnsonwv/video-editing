@@ -16,13 +16,13 @@ speedup = None if (sys.argv[5].lower() == "none" or sys.argv[5].lower() == "fals
 end_caps = False if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no") else True
 
 #editing setup
-total_time = 0
 beat = 60/tempo
 twobeats = 2*beat
 fourbeats = 4*beat
 sixbeats = 6*beat
 eightbeats = 8*beat
 clip_lengths = [twobeats, fourbeats, sixbeats, eightbeats]
+total_time = 0
 short_clips = []
 song = None
 final_cut = None
@@ -48,14 +48,12 @@ for filename in os.listdir(input_dir):
 		
 		#open new clip
 		clip = VideoFileClip(input_path_full, target_resolution=(1080,1920), audio=False, fps_source='fps')
-		
 		orig_time = clip.duration
 		total_time += orig_time
 		
 		#apply speedup to clip
-		if (speedup is not None):
-			if (speedup > 1):
-				clip = clip.fx(vfx.speedx, factor=speedup)
+		if (speedup is not None and speedup > 1):
+			clip = clip.fx(vfx.speedx, factor=speedup)
 			
 		#throw away clips that are too short to use
 		if (clip.duration < clip_lengths[0]):
@@ -64,12 +62,13 @@ for filename in os.listdir(input_dir):
 			continue
 		
 		#choose a random clip length
-		new_cl_index = random.randint(0,len(clip_lengths))-1
-		while (clip_lengths[new_cl_index] > clip.duration):
-			new_cl_index = random.randint(0,len(clip_lengths))-1
+		while True:
+			idx = random.randint(0,len(clip_lengths))-1
+			if clip_lengths[idx] < clip.duration:
+				break
 		
 		#choose a random starting point, then cut the clip
-		clip_time = clip_lengths[new_cl_index]
+		clip_time = clip_lengths[idx]
 		clip_start = random.random()*(clip.duration-clip_time)
 		clip = clip.subclip(clip_start, clip_start+clip_time)
 		
@@ -82,9 +81,8 @@ for filename in os.listdir(input_dir):
 
 #add black screen to start/end of video
 if (end_caps):
-	blackscreen = ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats)
-	short_clips.insert(0, blackscreen)
-	short_clips.append(blackscreen)
+	short_clips.insert(0, ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats))
+	short_clips.append(ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats))
 
 #make final cut from all clips
 final_cut = concatenate_videoclips(short_clips)
@@ -96,7 +94,7 @@ if (song is not None and song.duration >= final_cut.duration):
 	#find the measure before the user's audio_t0; will stop at latest allowable start time
 	measure = 0
 	music_start = 0
-	while (music_start <= audio_start and music_start + final_cut.duration <= song.end):
+	while (not (music_start > audio_start or music_start + final_cut.duration > song.end)):
 		measure += 2
 		music_start = measure*fourbeats
 		
@@ -109,11 +107,12 @@ if (song is not None and song.duration >= final_cut.duration):
 	#apply song to final_cut
 	final_cut = final_cut.set_audio(song)
 
-#deallocate unneeded variables to speed up exporting
+#deallocate unneeded variables to prevent memory swapping
+del clip_lengths
 del short_clips
-
+del song
 
 #write final video to output file
 print("---\nFinal video length: {0:.1f} sec ({1:.2f}% of original {2:.1f} sec).\n---".format(final_cut.duration, pct_used, total_time))
 output_path_full = os.getcwd() + "/%" + output_file
-final_cut.write_videofile(output_path_full, threads=4)
+final_cut.write_videofile(output_path_full)
