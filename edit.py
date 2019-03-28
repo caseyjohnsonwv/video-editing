@@ -43,7 +43,7 @@ for filename in os.listdir(input_dir):
 		#save audio file for later
 		song = AudioFileClip(input_path_full)
 	
-	else:
+	else if (ext == "mp4" or ext == "avi"):
 		clip_num += 1
 		
 		if (clip is not None):
@@ -94,7 +94,7 @@ pct_used = final_cut.duration/total_time*100
 
 
 #overwrite final_cut audio with song choice if the song is long enough
-if (song is not None and song.duration >= final_cut.duration):
+if (not (song is None or song.duration < final_cut.duration)):
 	
 	#find the measure before the user's audio_t0; will stop at latest allowable start time
 	measure = 0
