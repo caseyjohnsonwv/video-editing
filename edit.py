@@ -26,7 +26,7 @@ if (len(sys.argv) != 7):
 	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?>'")
 	exit()
 
-rejs = ['no', 'none', 'f', 'false']
+rejs = ['no', 'none', 'n', 'f', 'false']
 input_dir_short = sys.argv[1]
 output_file = sys.argv[2]
 tempo = int(parse_arg(sys.argv[3], rejections=rejs, default=120))
