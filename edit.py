@@ -3,17 +3,43 @@ import os
 import random
 import sys
 
+
+"""
+ARGUMENT PARSING FUNCTIONS
+"""
+
+def parse_boolean_arg(arg):
+	arg = arg.lower()
+	affirmatives = ['true', 'yes', 'y']
+	for test in affirmatives:
+		if (arg == test):
+			return True
+	return False
+	
+def parse_numeric_arg(arg, rejections=[], default=None):
+	arg = arg.lower()
+	for test in rejections:
+		if (arg == test):
+			return default
+	return arg
+
+	
+"""
+BEGIN MAIN SCRIPT
+"""
+	
 #parse args
 if (len(sys.argv) != 7):
 	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?>'")
 	exit()
-	
+
+rejs = ['no', 'none', 'f', 'false']
 input_dir_short = sys.argv[1]
 output_file = sys.argv[2]
-tempo = 120 if sys.argv[3].lower() == "none" else int(sys.argv[3])
-audio_start = 0.0 if (sys.argv[4].lower() == "none") else float(sys.argv[4])
-speedup = None if (sys.argv[5].lower() == "none" or sys.argv[5].lower() == "false" or sys.argv[5].lower() == "no") else float(sys.argv[5])
-end_caps = False if (sys.argv[6].lower() == "none" or sys.argv[6].lower() == "false" or sys.argv[6].lower() == "no") else True
+tempo = int(parse_numeric_arg(sys.argv[3], rejections=rejs, default=120))
+audio_start = float(parse_numeric_arg(sys.argv[4], rejections=rejs, default=0.0))
+speedup = float(parse_numeric_arg(sys.argv[5], rejections=rejs, default=1.0))
+end_caps = parse_boolean_arg(sys.argv[6])
 
 
 #editing setup
@@ -43,7 +69,7 @@ for filename in os.listdir(input_dir):
 		#save audio file for later
 		song = AudioFileClip(input_path_full)
 	
-	else if (ext == "mp4" or ext == "avi"):
+	elif (ext == "mp4" or ext == "avi"):
 		clip_num += 1
 		
 		if (clip is not None):
@@ -55,7 +81,7 @@ for filename in os.listdir(input_dir):
 		total_time += orig_time
 		
 		#apply speedup to clip
-		if (speedup is not None and speedup > 1):
+		if (speedup > 1):
 			clip = clip.fx(vfx.speedx, factor=speedup)
 			
 		#throw away clips that are too short to use
