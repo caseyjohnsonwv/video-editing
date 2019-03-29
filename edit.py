@@ -22,8 +22,8 @@ BEGIN MAIN SCRIPT
 """
 	
 #parse args
-if (len(sys.argv) != 7):
-	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?>'")
+if (len(sys.argv) != 8):
+	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?> <random?>'")
 	exit()
 
 rejs = ['no', 'none', 'n', 'f', 'false']
@@ -33,6 +33,7 @@ tempo = int(parse_arg(sys.argv[3], rejections=rejs, default=120))
 audio_start = float(parse_arg(sys.argv[4], rejections=rejs, default=0.0))
 speedup = float(parse_arg(sys.argv[5], rejections=rejs, default=1.0))
 end_caps = False if not parse_arg(sys.argv[6], rejections=rejs, default=False) else True
+rand = False if not parse_arg(sys.argv[7], rejections=rejs, default=False) else True
 
 
 #editing setup
@@ -95,7 +96,10 @@ for filename in os.listdir(input_dir):
 		clip = clip.subclip(clip_start, clip_start+clip_time)
 		
 		#save clip
-		short_clips.append(clip)
+		if (not rand or clip_num == 1):
+			short_clips.append(clip)
+		else:
+			short_clips.insert(random.randint(0, clip_num), clip)
 		
 		#print some clip info
 		print("%i: %s (%.1f sec --> %.1f sec)" % (clip_num, filename, orig_time, clip_time))
