@@ -80,7 +80,7 @@ for filename in os.listdir(input_dir):
 			
 		#throw away clips that are too short to use
 		if (clip.duration < clip_lengths[0]):
-			print("%i: %s (%.1f sec --> 0.0 sec) ... (Clip too short!)" % (clip_num, filename, orig_time))
+			print("%i: %s (%.1f sec --> 0.0 sec) --> Clip too short!" % (clip_num, filename, orig_time))
 			clip.close()
 			continue
 		
