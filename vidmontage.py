@@ -23,7 +23,7 @@ BEGIN MAIN SCRIPT
 	
 #parse args
 if (len(sys.argv) != 8):
-	print("\nERROR: Expected 'edit.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?> <random?>'")
+	print("\nERROR: Expected 'vidmontage.py <src_dir> <dest_file> <tempo?> <audio_t0?> <speedup?> <end_caps?> <random?>'")
 	exit()
 
 rejs = ['no', 'none', 'n', 'f', 'false']

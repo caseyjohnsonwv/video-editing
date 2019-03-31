@@ -10,13 +10,23 @@ pip install moviepy
 
 
 ---
+vidmontage.py
 COMMAND LINE ARGUMENTS:
 
-0: edit.py
+0: vidmontage.py
 1: directory containing raw video clips and audio file
-2: destination file name, including extension --> output will be placed in edit.py's root directory
+2: destination file name, including extension --> output will be placed in vidmontage.py's root directory
 3: tempo (in bpm) of the song this video will be set to
 4: start time of the song file (in seconds) --> audio will start on the first beat of the measure before this second
 5: a number greater than 1 speeds up every clip by that factor; "n" does nothing
 6: add 8 beats of black screen to the start/end (y/n)
 7: randomize clip order in final cut? (y/n)
+
+
+---
+vidconcat.py
+COMMAND LINE ARGUMENTS:
+
+0: vidconcat.py
+1: directory containing raw video clips and audio file
+2: destination file name, including extension --> output will be placed in vidconcat.py's root directory
