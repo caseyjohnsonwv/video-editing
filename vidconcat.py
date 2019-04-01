@@ -34,7 +34,9 @@ black_cuts = False if not parse_arg(sys.argv[3], rejections=rejs, default=False)
 total_time = 0
 clip = None
 clip_list = []
+
 blackscreen = ColorClip(size=(1920, 1080), color=(0,0,0), duration=1.0)
+blackscreen = afx.volumex(blackscreen, 0)
 
 #open every clip
 input_dir = os.getcwd() + "/" + input_dir_name
@@ -47,6 +49,8 @@ for filename in os.listdir(input_dir):
 		del clip
 		
 	clip = VideoFileClip(input_dir + "/" + filename, target_resolution=(1080,1920), audio=True, fps_source='fps')
+	clip = afx.audio_fadein(clip, 0.1)
+	clip = afx.audio_fadeout(clip, 0.1)
 	clip_list.append(clip)
 	total_time += clip.duration
 	
