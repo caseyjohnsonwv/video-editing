@@ -107,8 +107,8 @@ for filename in os.listdir(input_dir):
 
 #add black screen to start/end of video
 if (end_caps):
-	short_clips.insert(0, ColorClip(size=(1920, 1080), color=(0,0,0), duration=fourbeats))
-	short_clips.append(ColorClip(size=(1920, 1080), color=(0,0,0), duration=fourbeats))
+	short_clips.insert(0, ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats))
+	short_clips.append(ColorClip(size=(1920, 1080), color=(0,0,0), duration=eightbeats))
 
 	
 #make final cut from all clips
@@ -118,19 +118,23 @@ pct_used = final_cut.duration/total_time*100
 
 #overwrite final_cut audio with song choice if the song is long enough
 if (not (song is None or song.duration < final_cut.duration)):
+
+	#adjust audio_start time if end_caps are enabled
+	if (end_caps):
+		audio_start -= eightbeats
 	
 	#find the measure before the user's audio_t0; will stop at latest allowable start time
 	measure = 0
 	music_start = 0
 	while (not (music_start > audio_start or music_start + final_cut.duration > song.end)):
-		measure += 1
+		measure += 2
 		music_start = measure*fourbeats
 		
 	#cut song and apply fade-in/fade-out
 	song = song.subclip(music_start, music_start+final_cut.duration)
 	if (end_caps):
-		song = afx.audio_fadein(song, fourbeats)
-		song = afx.audio_fadeout(song, fourbeats)
+		song = afx.audio_fadein(song, eightbeats)
+		song = afx.audio_fadeout(song, eightbeats)
 	
 	#apply song to final_cut
 	final_cut = final_cut.set_audio(song)
